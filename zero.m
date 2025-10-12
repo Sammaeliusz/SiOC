@@ -18,6 +18,6 @@ for s = 120:10:200
             end
             o=o+l;
         end
-        %imwrite(frame,"35."+l+"."+s+".png");
+        imwrite(frame,"35."+l+"."+s+".png");
     end
 end
