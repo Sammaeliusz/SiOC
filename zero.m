@@ -1,4 +1,4 @@
-blades = 5; rpm = pi/10; M=64;
+blades = 5;
 x = 0:pi/100:2*pi;
 frame = getframe(gcf).cdata;
 for s = 120:10:200
