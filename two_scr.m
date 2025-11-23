@@ -1,4 +1,3 @@
-1;
 function out = compare(x,y)
     out = zeros(size(x));
     if max(x)>1
@@ -22,7 +21,7 @@ function out = compare(x,y)
     end
     tsp
     tapa = tsp/(size(out,1)*size(out,2))*100
-endfunction
+end
 function out = compareC(x,y)
     out = zeros(size(x));
     for i=1:3
@@ -111,7 +110,7 @@ function out = rotateImageBW(v, x, y, phi)
     dist = max([sqrt(x^2+y^2), sqrt((size(v,1)-x)^2+y^2), sqrt(x^2+(size(v,2)-y)^2), sqrt((size(v,1)-x)^2+(size(v,2)-y)^2)]);
     for i = 1:size(v,1)
         for j = 1:size(v,2)
-            if(v(i,j)~=0)
+            if(v(i,j)==0&&m~=(size(v,1)-1))
                 new_pos = [i-x,j-y]*rot_mat;
                 out(round(new_pos(1)+(x+dist)/sqrt(2)), round(new_pos(2)+(y+dist)/sqrt(2))) = v(i,j);
             end
@@ -133,23 +132,97 @@ function out = rotateImageC(v, x, y, phi)
 end
 function out = mosaic(v, type)
     if type == "Bayer"
-      for i = 1:2:size(v,1)
-        for j = 1:2:size(v,2)
-          v(i+1,j+1,1)=0;
-          v(i,j+1,1)=0;
-          v(i+1,j,1)=0;
-          v(i,j,3)=0;
-          v(i,j+1,3)=0;
-          v(i+1,j,3)=0;
-          v(i+1,j+1,2)=0;
-          v(i,j,2)=0;
-        endfor
-      endfor
-      out = v;
+      mo = cat(3, [1,0;0,0],[0,1;1,0],[0,0;0,1]);
     end
+    if type == "Fujifilm"
+      mo = cat(3, [0,0,0,0,1,0;1,0,1,0,0,0;0,0,0,0,1,0;0,1,0,0,0,0;0,0,0,1,0,1;0,1,0,0,0,0], [1,0,1,1,0,1;0,1,0,0,1,0;1,0,1,1,0,1;1,0,1,1,0,1;0,1,0,0,1,0;1,0,1,1,0,1],[0,1,0,0,0,0;0,0,0,1,0,1;0,1,0,0,0,0;0,0,0,0,1,0;1,0,1,0,0,0;0,0,0,0,1,0]);
+    end
+    mo=uint8(mo);
+    for i = 1:size(mo,1):size(v,1)-size(mo,1)
+        for j = 1:size(mo,2):size(v,2)-size(mo,2)
+          v(i:i+size(mo,1)-1,j:j+size(mo,2)-1,:)=v(i:i+size(mo,1)-1,j:j+size(mo,2)-1,:).*mo;
+        end
+    end
+    out = v;
 end
-function out = demosaic(v, interpolation_type)
-  out = cat(3,interp2(meshgrid(size(v,1),size(v,2)),v(:,:,1), 1:size(v,1), interpolation_type), interp2(meshgrid(size(v,1),size(v,2)),v(:,:,2), 1:size(v,1), interpolation_type), interp2(meshgrid(size(v,1),size(v,2)),v(:,:,3), 1:size(v,1), interpolation_type));
+function out = demosaic(v)
+      max_len = 20;
+      for i = 2:size(v,1)-1
+          for j=1:size(v,2)
+              if v(i,j,1)==0&&v(i-1,j,1)~=0
+                  m=1;
+                  while v(i+m,j,1)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,1)=v(i-1,j,1)/(m+1)*m+v(i+m,j,1)/(m+1);
+              end
+              if v(i,j,2)==0&&v(i-1,j,2)~=0
+                  m=1;
+                  while v(i+m,j,2)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,2)=v(i-1,j,2)/(m+1)*m+v(i+m,j,2)/(m+1);
+              end
+              if v(i,j,3)==0&&v(i-1,j,3)~=0
+                  m=1;
+                  while v(i+m,j,3)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,3)=v(i-1,j,3)/(m+1)*m+v(i+m,j,3)/(m+1);
+              end
+          end
+      end
+      for i = 1:size(v,1)
+          for j=2:size(v,2)-1
+              if v(i,j,1)==0&&v(i,j-1,1)~=0
+                  m=1;
+                  while v(i,j+m,1)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,1)=v(i,j-1,1)/(m+1)*m+v(i,j+m,1)/(m+1);
+              end
+              if v(i,j,2)==0&&v(i,j-1,2)~=0
+                  m=1;
+                  while v(i,j+m,2)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,2)=v(i,j-1,2)/(m+1)*m+v(i,j+m,2)/(m+1);
+              end
+              if v(i,j,3)==0&&v(i,j-1,3)~=0
+                  m=1;
+                  while v(i,j+m,3)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,3)=v(i,j-1,3)/(m+1)*m+v(i,j+m,3)/(m+1);
+              end
+          end
+      end
+      for i = 2:size(v,1)-1
+          for j=1:size(v,2)
+              if v(i,j,1)==0&&v(i-1,j,1)~=0
+                  m=1;
+                  while v(i+m,j,1)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,1)=v(i-1,j,1)/(m+1)*m+v(i+m,j,1)/(m+1);
+              end
+              if v(i,j,2)==0&&v(i-1,j,2)~=0
+                  m=1;
+                  while v(i+m,j,2)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,2)=v(i-1,j,2)/(m+1)*m+v(i+m,j,2)/(m+1);
+              end
+              if v(i,j,3)==0&&v(i-1,j,3)~=0
+                  m=1;
+                  while v(i+m,j,3)==0&&m<max_len
+                    m=m+1;
+                  end
+                  v(i,j,3)=v(i-1,j,3)/(m+1)*m+v(i+m,j,3)/(m+1);
+              end
+          end
+      end
+  out = v;
 end
 tmp = [0;0.12;0.25;0.5;0.75;1];
 tmp2 = [0.25;0.5;0.75;1;0;0.12];
@@ -159,11 +232,26 @@ o = cat(3, [tmp,tmp,tmp,tmp,tmp,tmp],[tmp2,tmp2,tmp2,tmp2,tmp2,tmp2], [tmp3,tmp3
 
 %oo = interpolate2D(o(:,:,2), )
 %o = rand(10,20);
+tic
 o = imread("demo4demo.png");
-oo = mosaic(o, "Bayer");
-ooo = demosaic(oo, "linear");
+oob = mosaic(o, "Bayer");
+ooob = demosaic(oob);
+toc
+tic
+o = imread("demo4demo.png");
+oo = mosaic(o, "Fujifilm");
+ooo = demosaic(oo);
+toc
 imshow(o)
 figure;
 imshow(oo)
 figure
 imshow(ooo);
+figure
+imshow(compareC(o,ooo))
+figure;
+imshow(oob)
+figure
+imshow(ooob);
+figure
+imshow(compareC(o,ooob))
