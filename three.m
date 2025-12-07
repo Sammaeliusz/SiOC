@@ -85,11 +85,3 @@ mae
 eta = 64;
 o = poissrnd(o/eta)*eta;
 imshow(o)
-%{
-o = imread("IMG_20251206_181841.jpg");
-filtr = probe2D(3*2^7, omega(zak));
-oo = filter(o, filtr);
-ooo = imresize(oo, 0.125,"bicubic");
-ooo = imresize(ooo, 8, "bicubic");
-imshow(ooo)
-%}
